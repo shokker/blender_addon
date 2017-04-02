@@ -77,8 +77,8 @@ class Make_Fracture(Operator):
         copy_object.name = "FractureMash_duplicate"
         #nastavenie vlastnosti
         position = properties(default_object)[0]
-        dimensions_original = properties(default_object)[1]
-        dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
+        dimensions = properties(default_object)[1]
+        # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
         rotation = properties(default_object)[2]
         pieces = properties(default_object)[3]
         copy_object.rotation_euler = (0,0,0)
@@ -91,7 +91,7 @@ class Make_Fracture(Operator):
                 delete_mesh()
                 array_co = disprepancy(dimensions)
                 make_planes(array_co,dimensions,copy_object)
-                bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
+                # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
                 copy_object.rotation_euler = rotation
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.data.objects['temp_grip'].select = True
@@ -104,7 +104,7 @@ class Make_Fracture(Operator):
 
         elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
-           bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+           # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
 
@@ -122,8 +122,8 @@ class Make_Fracture(Operator):
 
             elif default_object.type_p=="3":
                 create_duply(position,dimensions,pieces)
-        bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
-        print([dimensions,dimensions_original])
+        # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+        # print([dimensions,dimensions_original])
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
@@ -157,8 +157,9 @@ def create_fract(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
     bpy.ops.mesh.primitive_cube_add(view_align=False, location=(pos[0]-(dim[0]/2)+cube_size_x,pos[1]-(dim[1]/2)+cube_size_y,pos[2]-(dim[2]/2)+cube_size_z))
     fract = bpy.context.active_object
     fract.dimensions =(dim[0]/pieces,dim[1]/pieces,dim[2]/pieces)
+    fract.name = name
     axis = 1
-    create_count(pieces,dim,axis,fract,1.004,name,inner)
+    create_count1(pieces,dim,axis,fract,1.004,name,inner)
 
 #vytvory malu kocku
 def create_cubes(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
@@ -286,6 +287,8 @@ def differ(obj,pos,dime,count,i):
     bpy.ops.mesh.primitive_cube_add(location=(pos[0],pos[1],pos[2]))
     dif = bpy.context.active_object
     dif.name = "differ"
+
+    ## ta 0.005 by bolo fajn ratat nejaky scale parametrom
     dif.dimensions = (dime[0]-((dime[0]/count)*(2*i)-0.05),dime[1]-((dime[1]/count)*(2*i)-0.05),dime[2]-((dime[2]/count)*(2*i)-0.05))
     bpy.context.scene.update()
     temp_dimensions[0] = bpy.data.objects['differ'].dimensions[0] - 0.05
@@ -335,6 +338,11 @@ def create_count(pieces,dim,axis,cube,number,name,inner):
     array(cube,math.ceil(pieces*(dim[1]/axis))-inner,1,number)
     if name != 'temp_grip':
         array(cube,math.ceil(pieces*(dim[2]/axis))-inner,2,number)
+def create_count1(pieces,dim,axis,cube,number,name,inner):
+    array(cube,math.ceil(pieces-inner),0,number)
+    array(cube,math.ceil(pieces-inner),1,number)
+    if name != 'temp_grip':
+        array(cube,math.ceil(pieces-inner),2,number)
 
 def delete_mesh():
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
