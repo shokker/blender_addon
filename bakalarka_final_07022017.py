@@ -122,13 +122,9 @@ class Make_Fracture(Operator):
 
             elif default_object.type_p=="3":
                 create_duply(position,dimensions,pieces)
-            # intersection_separate(default_object,rotation)
-            #### robi separaciu objektu zakomentovane pretoze rodim random
-
-
-
-##                random_planes(pieces,position,dimensions,ob)
-##            separate_loose(ob)
+        bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+        intersection_separate(copy_object, rotation)
+        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
 
 
