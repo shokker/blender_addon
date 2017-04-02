@@ -104,6 +104,13 @@ class Make_Fracture(Operator):
 
         elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
+           bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+           intersection_separate(copy_object, rotation)
+           bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
+
+
+
+           return {"FINISHED"}
         else:
             if default_object.type_p=="0":
                 create_cubes(position,dimensions,pieces)
