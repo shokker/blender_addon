@@ -77,14 +77,14 @@ class Make_Fracture(Operator):
         copy_object.name = "FractureMash_duplicate"
         #nastavenie vlastnosti
         position = properties(default_object)[0]
-        dimensions = (2,2,2)
         dimensions_original = properties(default_object)[1]
+        dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
         rotation = properties(default_object)[2]
         pieces = properties(default_object)[3]
         copy_object.rotation_euler = (0,0,0)
         # default_object.rotation_euler = (0,0,0)
         # default_object.draw_bounds_type = "CAPSULE"
-        copy_object.dimensions = (2,2,2)
+        copy_object.dimensions = dimensions
 
         if default_object.type_p == "4":
                 create_temp_cube_random(position,dimensions,pieces)
@@ -123,6 +123,7 @@ class Make_Fracture(Operator):
             elif default_object.type_p=="3":
                 create_duply(position,dimensions,pieces)
         bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+        print([dimensions,dimensions_original])
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
