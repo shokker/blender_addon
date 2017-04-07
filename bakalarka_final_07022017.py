@@ -41,6 +41,7 @@ class Create_fracture(Panel):
                                                  ('4','Random','Random')),
                                                  name = "choose fracture type")
     bpy.types.Object.bomb = BoolProperty(name = "Explosive Ready")
+    bpy.types.Object.delete = BoolProperty(name = "Keep original mesh")
 
 
 
@@ -63,6 +64,8 @@ class Create_fracture(Panel):
         row.prop(ob,"type_p")
         row = layout.row()
         row.prop(ob,"bomb")
+        row = layout.row()
+        row.prop(ob,"delete")
         row = layout.row()
         row.operator(Make_Fracture.bl_idname)
 
@@ -92,6 +95,10 @@ class Make_Fracture(Operator):
                 array_co = disprepancy(dimensions)
                 make_planes(array_co,dimensions,copy_object)
                 # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
+                if not default_object.delete:
+                    bpy.ops.object.select_all(action='DESELECT')
+                    default_object.select = True
+                    bpy.ops.object.delete()
                 copy_object.rotation_euler = rotation
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.data.objects['temp_grip'].select = True
@@ -105,6 +112,10 @@ class Make_Fracture(Operator):
         elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
            # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+           if not default_object.delete:
+               bpy.ops.object.select_all(action='DESELECT')
+               default_object.select = True
+               bpy.ops.object.delete()
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
 
@@ -124,6 +135,11 @@ class Make_Fracture(Operator):
                 create_duply(position,dimensions,pieces)
         # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
         # print([dimensions,dimensions_original])
+        if not default_object.delete:
+            bpy.ops.object.select_all(action='DESELECT')
+            default_object.select = True
+            bpy.ops.object.delete()
+
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
