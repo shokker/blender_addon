@@ -105,34 +105,16 @@ class Make_Fracture(Operator):
                 return {"FINISHED"}
 
         #vnorennie druhe pretoze typ sa posiela ako prarameter
-
-        elif default_object.bomb == True:
+        if default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
-           # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
-           if not default_object.delete:
-               delete_default(default_object)
-           intersection_separate(copy_object, rotation)
-           bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
-           return {"FINISHED"}
 
-
+        #klasicke delenie
         else:
             types(default_object.type_p,position,dimensions,pieces,"FractureOnePartMesh")
-            # if default_object.type_p=="0":
-            #     create_cubes(position,dimensions,pieces)
-            # elif default_object.type_p=="1":
-            #     create_fract(position,dimensions,pieces)
-            #
-            # elif default_object.type_p=="2":
-            #     create_sphere(position,dimensions,pieces)
-            #
-            # elif default_object.type_p=="3":
-            #     create_duply(position,dimensions,pieces)
-        # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
-        # print([dimensions,dimensions_original])
+
+        #separacia a prienik
         if not default_object.delete:
             delete_default(default_object)
-
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
