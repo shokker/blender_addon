@@ -96,7 +96,7 @@ class Make_Fracture(Operator):
                 make_planes(array_co,dimensions,copy_object)
                 # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
                 if not default_object.delete:
-                    delete_default()
+                    delete_default(default_object)
                 copy_object.rotation_euler = rotation
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.data.objects['temp_grip'].select = True
@@ -111,7 +111,7 @@ class Make_Fracture(Operator):
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
            # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
            if not default_object.delete:
-               delete_default()
+               delete_default(default_object)
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
 
@@ -132,7 +132,7 @@ class Make_Fracture(Operator):
         # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
         # print([dimensions,dimensions_original])
         if not default_object.delete:
-            delete_default()
+            delete_default(default_object)
 
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
@@ -359,9 +359,9 @@ def delete_mesh():
     bpy.ops.object.editmode_toggle()
     bpy.ops.mesh.delete(type="EDGE_FACE")
 
-def delete_default():
+def delete_default(obj):
     bpy.ops.object.select_all(action='DESELECT')
-    default_object.select = True
+    obj.select = True
     bpy.ops.object.delete()
 
 
