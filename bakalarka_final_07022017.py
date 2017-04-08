@@ -22,6 +22,8 @@ from bpy.props import IntProperty, BoolProperty,EnumProperty
 
 
 
+#classa pre GUI
+
 class Create_fracture(Panel):
     bl_idname = "object.fracture"
     bl_label = "Create Fracture"
@@ -43,8 +45,6 @@ class Create_fracture(Panel):
     bpy.types.Object.bomb = BoolProperty(name = "Explosive Ready")
     bpy.types.Object.delete = BoolProperty(name = "Keep original mesh")
 
-
-
     ## modul je aktivny len pri objekte typu mesh
     @classmethod
     def poll(cls, context):
@@ -52,7 +52,6 @@ class Create_fracture(Panel):
             return context.active_object.type == "MESH"
         else:
             return False
-
 
     ## GUI rozlozenie
     def draw(self,context):
@@ -69,26 +68,26 @@ class Create_fracture(Panel):
         row = layout.row()
         row.operator(Make_Fracture.bl_idname)
 
+
+#classa Execute
 class Make_Fracture(Operator):
     bl_label = "Create"
     bl_idname = "make.fract"
 
     def execute(self,context):
+        ## vlastnosti povodneho objektu a vyvorenie kopie
         default_object,copy_object =  copy_selected_object()
-        #nastevenie mien Meshov
         default_object.name = "FractureMash_Default"
         copy_object.name = "FractureMash_duplicate"
-        #nastavenie vlastnosti
         position = properties(default_object)[0]
         dimensions = properties(default_object)[1]
-        # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
         rotation = properties(default_object)[2]
         pieces = properties(default_object)[3]
         copy_object.rotation_euler = (0,0,0)
-        # default_object.rotation_euler = (0,0,0)
-        # default_object.draw_bounds_type = "CAPSULE"
         copy_object.dimensions = dimensions
 
+
+        #ranom prve pretoze nepodporuje vnorenie
         if default_object.type_p == "4":
                 create_temp_cube_random(position,dimensions,pieces)
                 delete_mesh()
@@ -105,7 +104,7 @@ class Make_Fracture(Operator):
                 bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
                 return {"FINISHED"}
 
-
+        #vnorennie druhe pretoze typ sa posiela ako prarameter
 
         elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
@@ -114,21 +113,21 @@ class Make_Fracture(Operator):
                delete_default(default_object)
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
-
-
-
            return {"FINISHED"}
+
+
         else:
-            if default_object.type_p=="0":
-                create_cubes(position,dimensions,pieces)
-            elif default_object.type_p=="1":
-                create_fract(position,dimensions,pieces)
-
-            elif default_object.type_p=="2":
-                create_sphere(position,dimensions,pieces)
-
-            elif default_object.type_p=="3":
-                create_duply(position,dimensions,pieces)
+            types(default_object.type_p,position,dimensions,pieces,"FractureOnePartMesh")
+            # if default_object.type_p=="0":
+            #     create_cubes(position,dimensions,pieces)
+            # elif default_object.type_p=="1":
+            #     create_fract(position,dimensions,pieces)
+            #
+            # elif default_object.type_p=="2":
+            #     create_sphere(position,dimensions,pieces)
+            #
+            # elif default_object.type_p=="3":
+            #     create_duply(position,dimensions,pieces)
         # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
         # print([dimensions,dimensions_original])
         if not default_object.delete:
@@ -423,15 +422,6 @@ def make_planes(array_co,dimension,obj):
 
 
     # make_difference(obj)
-
-
-
-
-
-
-
-
-
 
 # ##oznacenie vsetkych novo vytvorench objektov
 def group():
