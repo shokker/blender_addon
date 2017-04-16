@@ -18,11 +18,9 @@ import random
 import sys
 
 from bpy.types import Operator,Panel
-from bpy.props import IntProperty, BoolProperty,EnumProperty
+from bpy.props import IntProperty, BoolProperty,EnumProperty,FloatProperty
 
 
-
-#classa pre GUI
 
 class Create_fracture(Panel):
     bl_idname = "object.fracture"
@@ -36,6 +34,22 @@ class Create_fracture(Panel):
            default=5,
            min=2,
            soft_max = 10)
+    bpy.types.Object.discrepancy_X = FloatProperty(
+           name="discrepancy_X",
+           default=0.50,
+           min=0.00,
+           max = 1.00)
+    bpy.types.Object.discrepancy_Y = FloatProperty(
+           name="discrepancy_Y",
+           default=0.50,
+           min=0.00,
+           max = 1.00)
+    bpy.types.Object.discrepancy_Z = FloatProperty(
+           name="discrepancy_Z",
+           default=0.50,
+           min=0.00,
+           max = 1.00)
+
     bpy.types.Object.type_p = EnumProperty(items= (('0', 'Cube', 'Cubes'),
                                                  ('1', 'Block', 'Blocks'),
                                                  ('2', 'Sphere', 'Spheres'),
@@ -45,6 +59,8 @@ class Create_fracture(Panel):
     bpy.types.Object.bomb = BoolProperty(name = "Explosive Ready")
     bpy.types.Object.delete = BoolProperty(name = "Keep original mesh")
 
+
+
     ## modul je aktivny len pri objekte typu mesh
     @classmethod
     def poll(cls, context):
@@ -52,6 +68,7 @@ class Create_fracture(Panel):
             return context.active_object.type == "MESH"
         else:
             return False
+
 
     ## GUI rozlozenie
     def draw(self,context):
@@ -66,55 +83,85 @@ class Create_fracture(Panel):
         row = layout.row()
         row.prop(ob,"delete")
         row = layout.row()
+        row.prop(ob,"discrepancy_X")
+        row = layout.row()
+        row.prop(ob,"discrepancy_Y")
+        row = layout.row()
+        row.prop(ob,"discrepancy_Z")
+        row = layout.row()
         row.operator(Make_Fracture.bl_idname)
 
-
-#classa Execute
 class Make_Fracture(Operator):
     bl_label = "Create"
     bl_idname = "make.fract"
 
     def execute(self,context):
-        ## vlastnosti povodneho objektu a vyvorenie kopie
         default_object,copy_object =  copy_selected_object()
+        #nastevenie mien Meshov
         default_object.name = "FractureMash_Default"
         copy_object.name = "FractureMash_duplicate"
+        #nastavenie vlastnosti
         position = properties(default_object)[0]
         dimensions = properties(default_object)[1]
+        # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
         rotation = properties(default_object)[2]
         pieces = properties(default_object)[3]
         copy_object.rotation_euler = (0,0,0)
+        # default_object.rotation_euler = (0,0,0)
+        # default_object.draw_bounds_type = "CAPSULE"
         copy_object.dimensions = dimensions
 
-
-        #ranom prve pretoze nepodporuje vnorenie
         if default_object.type_p == "4":
-                create_temp_cube_random(position,dimensions,pieces)
+                create_temp_grid_random(position,dimensions,pieces)
                 delete_mesh()
-                array_co = disprepancy(dimensions)
+                array_co = disprepancy(dimensions,default_object.discrepancy_X,default_object.discrepancy_Y,default_object.discrepancy_Z)
                 make_planes(array_co,dimensions,copy_object)
                 # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
                 if not default_object.delete:
-                    delete_default(default_object)
+                    bpy.ops.object.select_all(action='DESELECT')
+                    default_object.select = True
+                    bpy.ops.object.delete()
                 copy_object.rotation_euler = rotation
                 bpy.ops.object.select_all(action='DESELECT')
-                bpy.data.objects['temp_grip'].select = True
+                bpy.data.objects['temp_grid'].select = True
                 bpy.ops.object.delete()
                 separate_loose(copy_object)
                 bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
                 return {"FINISHED"}
 
-        #vnorennie druhe pretoze typ sa posiela ako prarameter
-        if default_object.bomb == True:
+
+
+        elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
+           # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+           if not default_object.delete:
+               bpy.ops.object.select_all(action='DESELECT')
+               default_object.select = True
+               bpy.ops.object.delete()
+           intersection_separate(copy_object, rotation)
+           bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
 
-        #klasicke delenie
+
+
+           return {"FINISHED"}
         else:
-            types(default_object.type_p,position,dimensions,pieces,"FractureOnePartMesh")
+            if default_object.type_p=="0":
+                create_cubes(position,dimensions,pieces)
+            elif default_object.type_p=="1":
+                create_fract(position,dimensions,pieces)
 
-        #separacia a prienik
+            elif default_object.type_p=="2":
+                create_sphere(position,dimensions,pieces)
+
+            elif default_object.type_p=="3":
+                create_duply(position,dimensions,pieces)
+        # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
+        # print([dimensions,dimensions_original])
         if not default_object.delete:
-            delete_default(default_object)
+            bpy.ops.object.select_all(action='DESELECT')
+            default_object.select = True
+            bpy.ops.object.delete()
+
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
@@ -158,10 +205,19 @@ def create_cubes(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
     bpy.ops.mesh.primitive_cube_add(location=((pos[0]-dim[0]/2)+props[1],(pos[1]-dim[1]/2)+props[1],(pos[2]-dim[2]/2)+props[1]))
     object_name(props[0],pieces,dim,1.004,name,inner)
 ## grip pre random
-def create_temp_cube_random(pos,dim,pieces,inner = False):
+def create_temp_grid_random(pos,dim,pieces,inner = False):
     props = properties_object(dim,pieces)
-    bpy.ops.mesh.primitive_plane_add(location=((pos[0]-dim[0]/2)+props[1],(pos[1]-dim[1]/2)+props[1],pos[2]))
-    object_name(props[0],pieces,dim,1,"temp_grip",inner)
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 2,y_subdivisions  = 2,location=(pos[0],pos[1],pos[2]))
+    fract = bpy.context.active_object
+    fract.name = "temp_grid"
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 2,y_subdivisions  = 2,location=(pos[0],pos[1],pos[2]-dim[2]/2))
+    fract = bpy.context.active_object
+    fract.name = "temp_grid"
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 2,y_subdivisions  = 2,location=(pos[0],pos[1],pos[2]+dim[2]/2))
+    fract = bpy.context.active_object
+    fract.name = "temp_grid"
+    group("temp_grid",0.5)
+
 
 #vytvory malu gulu
 def create_sphere(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
@@ -340,41 +396,23 @@ def delete_mesh():
     bpy.ops.object.editmode_toggle()
     bpy.ops.mesh.delete(type="EDGE_FACE")
 
-def delete_default(obj):
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select = True
-    bpy.ops.object.delete()
-
-
 
 ### roztrasenie bodov
-def disprepancy(main_object_dimension):
-    coordinate_array = []
-    final_co_array = []
-
-    ob = bpy.data.objects['temp_grip']
-    dim = ob.dimensions
-    ob.dimensions = (dim[0] * 0.7, dim[1] * 0.7, 0)
+def disprepancy(main_object_dimension,discrepancyX,discrepancyY,discrepancyZ):
+    ob = bpy.data.objects['temp_grid']
+    print(discrepancyX,discrepancyY,discrepancyZ)
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
     for v in mesh.verts:
-        if [v.co[0],v.co[1],v.co[2]] not in coordinate_array:
-            coordinate_array.append([v.co[0],v.co[1],v.co[2]])
-            v.co = (random_co(v.co[0],main_object_dimension[0]//2),random_co(v.co[1],main_object_dimension[1]//2),random_co(v.co[2],main_object_dimension[2]//2))
-        else:
-
-            v.select = True
-    bpy.ops.mesh.delete(type="VERT")
+            v.co = (random_co(v.co[0],main_object_dimension[0]/2,discrepancyX),random_co(v.co[1],main_object_dimension[1]/2,discrepancyY),random_co(v.co[2],main_object_dimension[2]/2,discrepancyZ))
     final_co_array = [ob.matrix_world * vert.co for vert in mesh.verts]
-
     # trigger viewport update
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
     bpy.ops.object.mode_set(mode='OBJECT')
-    dim = bpy.context.object.dimensions
-    bpy.context.object.dimensions = (dim[0]*0.99,dim[1]*0.99,dim[2]*0.99)
     return final_co_array
 
-def random_co(coordinate, dimenzion):
-    return coordinate + random.uniform(-dimenzion*(2/3),dimenzion*(2/3))
+def random_co(coordinate, dimenzion,discrepancy):
+    return  coordinate + random.uniform(-dimenzion*discrepancy,dimenzion*discrepancy)
+
 
 
 def random_angle(angle):
@@ -384,8 +422,6 @@ def make_planes(array_co,dimension,obj):
     temp = None
     rotate1 = math.pi/180*random.randint(1,360)
     rotate2 = math.pi/180*random.randint(1,360)
-    counter = 0
-    temp_array =[]
     for v in array_co:
         for i in range(2):
             bpy.ops.mesh.primitive_plane_add(location=(v[0],v[1],v[2]))
@@ -398,25 +434,33 @@ def make_planes(array_co,dimension,obj):
                 bpy.ops.transform.rotate(value = random_angle(rotate2), axis=(random.randrange(0,6),random.randrange(0,6),random.randrange(0,6)))
 
             solidify()
-            counter+=1
             make_difference(obj)
 
 
 
     # make_difference(obj)
 
+
+
+
+
+
+
+
+
+
 # ##oznacenie vsetkych novo vytvorench objektov
-def group():
+def group(name = "FractureOnePartMesh", scale = 1.01):
     for ob in bpy.context.scene.objects:
-        if "FractureOnePartMesh" in ob.name:
+        if name in ob.name:
             ob.select = True
             bpy.context.scene.objects.active = ob
         else:
             ob.select = False
     bpy.ops.object.join()
     all = bpy.context.active_object
-    all.name = "FractureOnePartMesh"
-    bpy.ops.transform.resize(value=(1.01,1.01,1.01))
+    all.name = name
+    bpy.ops.transform.resize(value=(scale,scale,scale))
 
 
 #urcenie typu objektu
