@@ -44,6 +44,11 @@ class Create_fracture(Panel):
            default=45,
            min=0,
            max = 90)
+    bpy.types.Object.planeVR = IntProperty(
+           name="planeVR",
+           default=45,
+           min=0,
+           max = 90)
     bpy.types.Object.discrepancy_X = FloatProperty(
            name="discrepancy_X",
            default=0.50,
@@ -103,6 +108,8 @@ class Create_fracture(Panel):
         row = layout.row()
         row.prop(ob,"planeV")
         row = layout.row()
+        row.prop(ob,"planeVR")
+        row = layout.row()
         row.operator(Make_Fracture.bl_idname)
 
 class Make_Fracture(Operator):
@@ -127,7 +134,7 @@ class Make_Fracture(Operator):
                 create_temp_grid_random(position,dimensions,pieces)
                 delete_mesh()
                 array_co = disprepancy(dimensions,default_object.discrepancy_X,default_object.discrepancy_Y,default_object.discrepancy_Z)
-                make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV)
+                make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR)
                 # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
                 if not default_object.delete:
                     bpy.ops.object.select_all(action='DESELECT')
