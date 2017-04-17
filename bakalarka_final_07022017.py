@@ -108,7 +108,6 @@ class Create_fracture(Panel):
 class Make_Fracture(Operator):
     bl_label = "Create"
     bl_idname = "make.fract"
-
     def execute(self,context):
         default_object,copy_object =  copy_selected_object()
         #nastevenie mien Meshov
@@ -124,7 +123,6 @@ class Make_Fracture(Operator):
         # default_object.rotation_euler = (0,0,0)
         # default_object.draw_bounds_type = "CAPSULE"
         copy_object.dimensions = dimensions
-
         if default_object.type_p == "4":
                 create_temp_grid_random(position,dimensions,pieces)
                 delete_mesh()
@@ -135,7 +133,6 @@ class Make_Fracture(Operator):
                     bpy.ops.object.select_all(action='DESELECT')
                     default_object.select = True
                     bpy.ops.object.delete()
-                return
                 copy_object.rotation_euler = rotation
                 bpy.ops.object.select_all(action='DESELECT')
                 bpy.data.objects['temp_grid'].select = True
@@ -143,9 +140,6 @@ class Make_Fracture(Operator):
                 separate_loose(copy_object)
                 bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
                 return {"FINISHED"}
-
-
-
         elif default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
            # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
@@ -155,9 +149,6 @@ class Make_Fracture(Operator):
                bpy.ops.object.delete()
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
-
-
-
            return {"FINISHED"}
         else:
             if default_object.type_p=="0":
@@ -176,13 +167,9 @@ class Make_Fracture(Operator):
             bpy.ops.object.select_all(action='DESELECT')
             default_object.select = True
             bpy.ops.object.delete()
-
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
-
-
-
 
 
 ##################################### OBJEKTY ############################
@@ -191,6 +178,7 @@ def properties_object(dim,pieces):
     axis = min(dim[0],dim[1],dim[2])
     cube_size = (axis/pieces)/2
     return [axis,cube_size]
+
 
 def object_name(axis,pieces,dim,number ,name,inner):
     fract = bpy.context.active_object
@@ -201,6 +189,7 @@ def object_name(axis,pieces,dim,number ,name,inner):
         return
     fract.dimensions =(axis/pieces,axis/pieces,axis/pieces)
     create_count(pieces,dim,axis,fract,number,name,inner)
+
 
 #vytvory maly kvader
 def create_fract(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
@@ -214,24 +203,20 @@ def create_fract(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
     axis = 1
     create_count1(pieces,dim,axis,fract,1.004,name,inner)
 
+
 #vytvory malu kocku
 def create_cubes(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
     props = properties_object(dim,pieces)
     bpy.ops.mesh.primitive_cube_add(location=((pos[0]-dim[0]/2)+props[1],(pos[1]-dim[1]/2)+props[1],(pos[2]-dim[2]/2)+props[1]))
     object_name(props[0],pieces,dim,1.004,name,inner)
+
+
 ## grip pre random
 def create_temp_grid_random(pos,dim,pieces,inner = False):
     props = properties_object(dim,pieces)
-    bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 4,y_subdivisions  = 4,location=(pos[0],pos[1],pos[2]))
+    bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 3,y_subdivisions  = 3,location=(pos[0],pos[1],pos[2]))
     fract = bpy.context.active_object
     fract.name = "temp_grid"
-    # bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 3,y_subdivisions  = 3,location=(pos[0],pos[1],pos[2]-dim[2]/2))
-    # fract = bpy.context.active_object
-    # fract.name = "temp_grid"
-    # bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 3,y_subdivisions  = 3,location=(pos[0],pos[1],pos[2]+dim[2]/2))
-    # fract = bpy.context.active_object
-    # fract.name = "temp_grid"
-    group("temp_grid",0.5)
 
 
 #vytvory malu gulu
@@ -239,6 +224,7 @@ def create_sphere(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
     props = properties_object(dim,pieces)
     bpy.ops.mesh.primitive_ico_sphere_add(location=((pos[0]-dim[0]/2)+ props[1],(pos[1]-dim[1]/2)+props[1],(pos[2]-dim[2]/2)+props[1]))
     object_name(props[0],pieces,dim,1.004,name,inner)
+
 
 #vytvory malu kopiu
 def create_duply(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
@@ -256,27 +242,27 @@ def create_duply(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
 
 
 #vytvory plany cez ktore sa interpoluje
-def planes(rotate,pos,dim):
-    side = random.choice([-1,1])
-    rand0 = random.randint(0,(dim[0]//2))
-    rand1 = random.randint(0,(dim[1]//2))
-    rand2 = random.randint(0,(dim[2]//2))
-    bpy.ops.mesh.primitive_plane_add(location=(pos[0]+rand0*side,pos[1]+rand1*side,pos[2]+rand2*side))
-    plane = bpy.context.active_object
-    plane.dimensions = (dim[0]*3,dim[1]*3,dim[2]*3)
-    bpy.ops.transform.rotate(value = rotate, axis=(random.randrange(0,6),random.randrange(0,6),random.randrange(0,6)))
-    bpy.ops.object.modifier_add(type='SOLIDIFY')
-    c_name = bpy.context.object.modifiers[0].name
-    bpy.context.object.modifiers["{name}".format(name=c_name)].thickness = 0.001
-    bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Solidify')
-    return plane
-
-
-def random_planes(count,pos,dim,ob):
-    for i in range(count*4):
-        rotate = random.randint(1,180)
-        p=planes(math.pi/180*rotate,pos,dim)
-        plane_differ(p,ob)
+# def planes(rotate,pos,dim):
+#     side = random.choice([-1,1])
+#     rand0 = random.randint(0,(dim[0]//2))
+#     rand1 = random.randint(0,(dim[1]//2))
+#     rand2 = random.randint(0,(dim[2]//2))
+#     bpy.ops.mesh.primitive_plane_add(location=(pos[0]+rand0*side,pos[1]+rand1*side,pos[2]+rand2*side))
+#     plane = bpy.context.active_object
+#     plane.dimensions = (dim[0]*3,dim[1]*3,dim[2]*3)
+#     bpy.ops.transform.rotate(value = rotate, axis=(random.randrange(0,6),random.randrange(0,6),random.randrange(0,6)))
+#     bpy.ops.object.modifier_add(type='SOLIDIFY')
+#     c_name = bpy.context.object.modifiers[0].name
+#     bpy.context.object.modifiers["{name}".format(name=c_name)].thickness = 0.001
+#     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Solidify')
+#     return plane
+#
+#
+# def random_planes(count,pos,dim,ob):
+#     for i in range(count*4):
+#         rotate = random.randint(1,180)
+#         p=planes(math.pi/180*rotate,pos,dim)
+#         plane_differ(p,ob)
 
 
 ######################################## MODIFIKATORY #################################################################
@@ -319,13 +305,13 @@ def make_difference(obj,name = "FractureOnePartMesh"):
     bpy.ops.object.delete()
 
 
-## bevel modifikator
-def bevel(ob):
-    bpy.context.scene.objects.active = ob
-    bpy.ops.object.modifier_add(type='BEVEL')
-    c_name = bpy.context.object.modifiers[0].name
-    bpy.context.object.modifiers["{name}".format(name=c_name)].width = 0.3
-    bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Bevel')
+# ## bevel modifikator
+# def bevel(ob):
+#     bpy.context.scene.objects.active = ob
+#     bpy.ops.object.modifier_add(type='BEVEL')
+#     c_name = bpy.context.object.modifiers[0].name
+#     bpy.context.object.modifiers["{name}".format(name=c_name)].width = 0.3
+#     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Bevel')
 
 def solidify():
     bpy.ops.object.modifier_add(type='SOLIDIFY')
@@ -400,11 +386,14 @@ def create_count(pieces,dim,axis,cube,number,name,inner):
     array(cube,math.ceil(pieces*(dim[1]/axis))-inner,1,number)
     if name != 'temp_grip':
         array(cube,math.ceil(pieces*(dim[2]/axis))-inner,2,number)
+
+# zvlast metoda pre block
 def create_count1(pieces,dim,axis,cube,number,name,inner):
     array(cube,math.ceil(pieces-inner),0,number)
     array(cube,math.ceil(pieces-inner),1,number)
     if name != 'temp_grip':
         array(cube,math.ceil(pieces-inner),2,number)
+
 
 def delete_mesh():
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
@@ -417,37 +406,40 @@ def disprepancy(main_object_dimension,discrepancyX,discrepancyY,discrepancyZ):
     ob = bpy.data.objects['temp_grid']
     print(discrepancyX,discrepancyY,discrepancyZ)
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
+    temp_z = main_object_dimension[2]/2 - main_object_dimension[2]/9
     for v in mesh.verts:
-            v.co = (random_co(v.co[0],main_object_dimension[0]/4,discrepancyX),random_co(v.co[1],main_object_dimension[1]/4,discrepancyY),random_co(v.co[2],main_object_dimension[2]/2,discrepancyZ))
+            v.co = (random_co(v.co[0],main_object_dimension[0]/3,discrepancyX),random_co(v.co[1],main_object_dimension[1]/3,discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/9,discrepancyZ))
+            temp_z -= main_object_dimension[2]/9
     final_co_array = [ob.matrix_world * vert.co for vert in mesh.verts]
     # trigger viewport update
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
     bpy.ops.object.mode_set(mode='OBJECT')
     return final_co_array
 
+
 def random_co(coordinate, dimenzion,discrepancy):
     return  coordinate + random.uniform(-dimenzion*discrepancy,dimenzion*discrepancy)
-
 
 
 def random_angle(angle,dicrepancy):
     return math.pi/180 * ( angle + random.uniform(-dicrepancy,dicrepancy))
 
-def make_planes(array_co,dimension,obj,horizont, vertical):
-    temp = None
-    print(horizont,vertical)
+
+def make_planes(array_co,dimension,obj,horizont, vertical,vertical_rot):
     # rotate1 = math.pi/180*random.randint(1,360)
     # rotate2 = math.pi/180*random.randint(1,360)
     for v in array_co:
-        for i in range(2):
+        for i in range(3):
             bpy.ops.mesh.primitive_plane_add(location=(v[0],v[1],v[2]))
             plane = bpy.context.active_object
             plane.name = "FractureOnePartMesh"
             plane.dimensions = (dimension[0]*3,dimension[1]*3,0)
             if i == 1:
-                bpy.ops.transform.rotate(value = random_angle(90,horizont), axis = (0,1,0))
+                bpy.ops.transform.rotate(value = random_angle(90,vertical), axis = (0,1,0))
+            elif i == 2:
+                bpy.ops.transform.rotate(value=random_angle(90, vertical_rot), axis=(1, 0, 0))
             else:
-                bpy.ops.transform.rotate(value = random_angle(0,vertical), axis = (1,0,0))
+                bpy.ops.transform.rotate(value = random_angle(0,horizont), axis = (1,0,0))
 
             solidify()
             make_difference(obj)
@@ -455,14 +447,6 @@ def make_planes(array_co,dimension,obj,horizont, vertical):
 
     # group()
     # make_difference(obj)
-
-
-
-
-
-
-
-
 
 
 # ##oznacenie vsetkych novo vytvorench objektov
@@ -490,6 +474,8 @@ def types(typ,position,dimensions,pieces,name,inner = False):
     elif typ == "3":
         create_duply(position,dimensions,pieces,name,inner)
 ########################## PRIDANIE EXPLOZIE ###################
+
+
 def explode(ob,pos,dime,pieces,typ):
     ## count je pocet "rozdeleni"
     ## n je pocet deleni
@@ -503,7 +489,6 @@ def explode(ob,pos,dime,pieces,typ):
     ## tu sa mi vyvoria "kocky"
     types(typ,pos,dime,count,"FractureOnePartMesh_0")
     ob = bpy.context.active_object
-
     for i in range(n):
         if i!=n-1:
             ## param: povodnu objekt , pozicia ,dimenzia , pocet casti , i+1 , nieco brutalne , typ
