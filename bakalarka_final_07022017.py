@@ -193,7 +193,6 @@ def object_name(axis,pieces,dim,number ,name,inner):
     if name == "temp_grip":
         fract.dimensions =(axis/pieces,axis/pieces,0)
         create_count(pieces,dim,axis,fract,number,name,inner)
-        return
     fract.dimensions =(axis/pieces,axis/pieces,axis/pieces)
     create_count(pieces,dim,axis,fract,number,name,inner)
 
@@ -224,6 +223,7 @@ def create_temp_grid_random(pos,dim,pieces,inner = False):
     bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 3,y_subdivisions  = 3,location=(pos[0],pos[1],pos[2]))
     fract = bpy.context.active_object
     fract.name = "temp_grid"
+    bpy.ops.transform.resize(value=(0.5, 0.5, 0.5))
 
 
 #vytvory malu gulu
