@@ -88,7 +88,11 @@ class Make_basic_Fracture(Operator):
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
            if not default_object.delete:
                delete_default_object(default_object)
+
+           onePartMesh = bpy.context.active_object
+           onePartMesh.dimensions = (dimensions[0] - 2, dimensions[1] - 2, dimensions[2] - 2)
            copy_object.dimensions = (dimensions[0] - 2, dimensions[1] - 2, dimensions[2] - 2)
+
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
            return {"FINISHED"}
@@ -107,6 +111,8 @@ class Make_basic_Fracture(Operator):
 
         if not default_object.delete:
             delete_default_object(default_object)
+        onePartMesh = bpy.context.active_object
+        onePartMesh.dimensions = (dimensions[0]-2,dimensions[1]-2,dimensions[2]-2)
         copy_object.dimensions = (dimensions[0]-2,dimensions[1]-2,dimensions[2]-2)
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
@@ -234,7 +240,6 @@ class Make_random_Fracture(Operator):
                 make_points(position,default_object.one,default_object.two,default_object.three)
                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, False, axis)
             make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR,axis)
-            # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
             if not default_object.delete:
                 delete_default_object(default_object)
 
@@ -610,6 +615,7 @@ def get_basic_info(all = False):
     position = properties(default_object)[0]
     dimensions = properties(default_object)[1]
     dimensions = (dimensions[0]+2,dimensions[1]+2,dimensions[2]+2)
+    copy_object.dimensions = dimensions
     # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
     rotation = properties(default_object)[2]
     if all:
