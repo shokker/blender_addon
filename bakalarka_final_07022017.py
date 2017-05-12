@@ -15,12 +15,8 @@ import bpy
 import bmesh
 import math
 import random
-import sys
-
 from bpy.types import Operator,Panel
 from bpy.props import IntProperty, BoolProperty,EnumProperty,FloatProperty
-
-
 
 
 class FracturePanel():
@@ -39,41 +35,14 @@ class FracturePanel():
 class Create_basic_fracture(FracturePanel,Panel):
     bl_idname = "object.basic_fracture"
     bl_label = "Create basic Fracture"
+
+
     bpy.types.Object.pieces = IntProperty(
            name="subdivide",
            default=5,
            min=2,
-           soft_max = 10)
-    # bpy.types.Object.planeH = IntProperty(
-    #        name="planeH",
-    #        default=45,
-    #        min=0,
-    #        max = 90)
-    # bpy.types.Object.planeV = IntProperty(
-    #        name="planeV",
-    #        default=45,
-    #        min=0,
-    #        max = 90)
-    # bpy.types.Object.planeVR = IntProperty(
-    #        name="planeVR",
-    #        default=45,
-    #        min=0,
-    #        max = 90)
-    # bpy.types.Object.discrepancy_X = FloatProperty(
-    #        name="discrepancy_X",
-    #        default=0.50,
-    #        min=0.00,
-    #        max = 1.00)
-    # bpy.types.Object.discrepancy_Y = FloatProperty(
-    #        name="discrepancy_Y",
-    #        default=0.50,
-    #        min=0.00,
-    #        max = 1.00)
-    # bpy.types.Object.discrepancy_Z = FloatProperty(
-    #        name="discrepancy_Z",
-    #        default=0.50,
-    #        min=0.00,
-    #        max = 1.00)
+           max = 10)
+
 
     bpy.types.Object.type_p = EnumProperty(items= (('0', 'Cube', 'Cubes'),
                                                  ('1', 'Block', 'Blocks'),
@@ -82,16 +51,6 @@ class Create_basic_fracture(FracturePanel,Panel):
                                                  name = "choose fracture type")
     bpy.types.Object.bomb = BoolProperty(name = "Explosive Ready")
     bpy.types.Object.delete = BoolProperty(name = "Keep original mesh")
-
-
-
-    ## modul je aktivny len pri objekte typu mesh
-    @classmethod
-    def poll(cls, context):
-        if (context.active_object is not None):
-            return context.active_object.type == "MESH"
-        else:
-            return False
 
 
     ## GUI rozlozenie
@@ -109,86 +68,56 @@ class Create_basic_fracture(FracturePanel,Panel):
         row = layout.row()
         row.operator(Make_basic_Fracture.bl_idname)
 
+
 class Make_basic_Fracture(Operator):
     bl_label = "Create"
     bl_idname = "make.basic_fract"
     def execute(self,context):
-        # default_object,copy_object =  copy_selected_object()
-        # #nastevenie mien Meshov
-        # default_object.name = "FractureMash_Default"
-        # copy_object.name = "FractureMash_duplicate"
-        # #nastavenie vlastnosti
-        # position = properties(default_object)[0]
-        # dimensions = properties(default_object)[1]
-        # # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
-        # rotation = properties(default_object)[2]
-        # pieces = properties(default_object)[3]
-        # copy_object.rotation_euler = (0,0,0)
-        # # default_object.rotation_euler = (0,0,0)
-        # # default_object.draw_bounds_type = "CAPSULE"
-        # copy_object.dimensions = dimensions
 
-        default_object = get_basic_info()[0]
-        copy_object = get_basic_info()[1]
-        position = get_basic_info()[2]
-        dimensions = get_basic_info()[3]
-        rotation = get_basic_info()[4]
-        pieces = get_basic_info()[5]
-        # if default_object.type_p == "4":
-        #         # create_temp_grid_random(position,dimensions,pieces)
-        #         # delete_mesh()
-        #         ob = make_points(position,1,1,1)
-        #         array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z)
-        #         make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR)
-        #         # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
-        #         if not default_object.delete:
-        #             bpy.ops.object.select_all(action='DESELECT')
-        #             default_object.select = True
-        #             bpy.ops.object.delete()
-        #
-        #         copy_object.rotation_euler = rotation
-        #         bpy.ops.object.select_all(action='DESELECT')
-        #         bpy.data.objects['temp_grid'].select = True
-        #         bpy.ops.object.delete()
-        #         separate_loose(copy_object)
-        #         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
-        #         return {"FINISHED"}
+        ################## BASIC OBJECT INFO ######################
+        all_properties = get_basic_info(True)
+        default_object = all_properties[0]
+        copy_object = all_properties[1]
+        position = all_properties[2]
+        dimensions = all_properties[3]
+        rotation = all_properties[4]
+        pieces = all_properties[5]
+
+        #################### EXPLODE ###########################
         if default_object.bomb == True:
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
-           # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
            if not default_object.delete:
-               bpy.ops.object.select_all(action='DESELECT')
-               default_object.select = True
-               bpy.ops.object.delete()
+               delete_default_object(default_object)
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
            return {"FINISHED"}
-        else:
-            if default_object.type_p=="0":
+
+        ################# BASIC SHADES ###########################
+        if default_object.type_p=="0":
                 create_cubes(position,dimensions,pieces)
-            elif default_object.type_p=="1":
+        elif default_object.type_p=="1":
                 create_fract(position,dimensions,pieces)
 
-            elif default_object.type_p=="2":
+        elif default_object.type_p=="2":
                 create_sphere(position,dimensions,pieces)
 
-            elif default_object.type_p=="3":
+        elif default_object.type_p=="3":
                 create_duply(position,dimensions,pieces)
-        # bpy.data.objects['FractureOnePartMesh'].dimensions = dimensions_original
-        # print([dimensions,dimensions_original])
+
         if not default_object.delete:
-            bpy.ops.object.select_all(action='DESELECT')
-            default_object.select = True
-            bpy.ops.object.delete()
+            delete_default_object(default_object)
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
 
+
 class Create_random_fracture(FracturePanel,Panel):
     bl_idname = "object.random_fracture"
     bl_label = "Create random Fracture"
-    bpy.types.Object.delete = BoolProperty(name="Keep original mesh")
 
+
+    bpy.types.Object.delete = BoolProperty(name="Keep original mesh")
+    bpy.types.Object.test = BoolProperty(name="Test")
     bpy.types.Object.planeH = IntProperty(
            name="planeH",
            default=45,
@@ -219,21 +148,36 @@ class Create_random_fracture(FracturePanel,Panel):
            default=0.50,
            min=0.00,
            max = 1.00)
+    bpy.types.Object.one = IntProperty(
+        name="subdivide",
+        default=1,
+        min=1,
+        max=2)
+    bpy.types.Object.two = IntProperty(
+        name="subdivide",
+        default=1,
+        min=1,
+        max=2)
+    bpy.types.Object.three = IntProperty(
+        name="subdivide",
+        default=1,
+        min=1,
+        max=2)
+    bpy.types.Object.grid_type = EnumProperty(items=(('0', 'grid', '9x9'),
+                                                  ('1', 'custom', 'custom grid')),
+                                           name="choose grid system")
+    bpy.types.Object.x = bpy.props.BoolProperty(name ="X")
+    bpy.types.Object.y = bpy.props.BoolProperty(name ="Y")
+    bpy.types.Object.z = bpy.props.BoolProperty(name ="Z")
 
-    ## modul je aktivny len pri objekte typu mesh
-    @classmethod
-    def poll(cls, context):
-        if (context.active_object is not None):
-            return context.active_object.type == "MESH"
-        else:
-            return False
 
     ## GUI rozlozenie
     def draw(self, context):
         ob = context.object
         layout = self.layout
+
         row = layout.row()
-        row.prop(ob, "delete")
+        row.prop(ob,"grid_type")
         row = layout.row()
         row.prop(ob,"discrepancy_X")
         row = layout.row()
@@ -247,6 +191,25 @@ class Create_random_fracture(FracturePanel,Panel):
         row = layout.row()
         row.prop(ob,"planeVR")
         row = layout.row()
+        row.prop(ob, "delete")
+        row = layout.row()
+        row.prop(ob, "x")
+        row = layout.row()
+        row.prop(ob, "y")
+        row = layout.row()
+        row.prop(ob, "z")
+        rowOne = layout.row()
+        rowOne.prop(ob, "one")
+        rowTwo = layout.row()
+        rowTwo.prop(ob, "two")
+        rowThree = layout.row()
+        rowThree.prop(ob, "three")
+        if ob.grid_type == '0':
+            rowOne.enabled = False
+            rowTwo.enabled = False
+            rowThree.enabled = False
+        row = layout.row()
+
         row.operator(Make_random_Fracture.bl_idname)
 
 class Make_random_Fracture(Operator):
@@ -254,37 +217,24 @@ class Make_random_Fracture(Operator):
         bl_idname = "make.random_fract"
 
         def execute(self, context):
-            # default_object,copy_object =  copy_selected_object()
-            # #nastevenie mien Meshov
-            # default_object.name = "FractureMash_Default"
-            # copy_object.name = "FractureMash_duplicate"
-            # #nastavenie vlastnosti
-            # position = properties(default_object)[0]
-            # dimensions = properties(default_object)[1]
-            # # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
-            # rotation = properties(default_object)[2]
-            # pieces = properties(default_object)[3]
-            # copy_object.rotation_euler = (0,0,0)
-            # # default_object.rotation_euler = (0,0,0)
-            # # default_object.draw_bounds_type = "CAPSULE"
-            # copy_object.dimensions = dimensions
-
-            default_object = get_basic_info()[0]
-            copy_object = get_basic_info()[1]
-            position = get_basic_info()[2]
-            dimensions = get_basic_info()[3]
-            rotation = get_basic_info()[4]
-
-            # create_temp_grid_random(position,dimensions,pieces)
-            # delete_mesh()
-            ob = make_points(position,1,1,1)
-            array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z)
-            make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR)
+            all_properties = get_basic_info()
+            default_object = all_properties[0]
+            copy_object = all_properties[1]
+            position = all_properties[2]
+            dimensions = all_properties[3]
+            rotation = all_properties[4]
+            axis = [default_object.x,default_object.y,default_object.z]
+            if default_object.grid_type == '0':
+                 create_temp_grid_random(position,dimensions)
+                 delete_mesh()
+                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, True, [3,3,8])
+            else:
+                make_points(position,default_object.one,default_object.two,default_object.three)
+                array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, False, axis)
+            make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR,axis)
             # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
             if not default_object.delete:
-                bpy.ops.object.select_all(action='DESELECT')
-                default_object.select = True
-                bpy.ops.object.delete()
+                delete_default_object(default_object)
 
             copy_object.rotation_euler = rotation
             bpy.ops.object.select_all(action='DESELECT')
@@ -335,8 +285,7 @@ def create_cubes(pos,dim,pieces,name = "FractureOnePartMesh",inner = False):
 
 
 ## grip pre random
-def create_temp_grid_random(pos,dim,pieces,inner = False):
-    props = properties_object(dim,pieces)
+def create_temp_grid_random(pos,dim):
     bpy.ops.mesh.primitive_grid_add(x_subdivisions  = 3,y_subdivisions  = 3,location=(pos[0],pos[1],pos[2]))
     fract = bpy.context.active_object
     fract.name = "temp_grid"
@@ -400,33 +349,7 @@ def make_points(location,u,v,w):
     me.update()
     # Set object mode
     bpy.ops.object.editmode_toggle()
-    return ob
 
-
-
-
-#vytvory plany cez ktore sa interpoluje
-# def planes(rotate,pos,dim):
-#     side = random.choice([-1,1])
-#     rand0 = random.randint(0,(dim[0]//2))
-#     rand1 = random.randint(0,(dim[1]//2))
-#     rand2 = random.randint(0,(dim[2]//2))
-#     bpy.ops.mesh.primitive_plane_add(location=(pos[0]+rand0*side,pos[1]+rand1*side,pos[2]+rand2*side))
-#     plane = bpy.context.active_object
-#     plane.dimensions = (dim[0]*3,dim[1]*3,dim[2]*3)
-#     bpy.ops.transform.rotate(value = rotate, axis=(random.randrange(0,6),random.randrange(0,6),random.randrange(0,6)))
-#     bpy.ops.object.modifier_add(type='SOLIDIFY')
-#     c_name = bpy.context.object.modifiers[0].name
-#     bpy.context.object.modifiers["{name}".format(name=c_name)].thickness = 0.001
-#     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Solidify')
-#     return plane
-#
-#
-# def random_planes(count,pos,dim,ob):
-#     for i in range(count*4):
-#         rotate = random.randint(1,180)
-#         p=planes(math.pi/180*rotate,pos,dim)
-#         plane_differ(p,ob)
 
 
 ######################################## MODIFIKATORY #################################################################
@@ -468,15 +391,6 @@ def make_difference(obj,name = "FractureOnePartMesh"):
     obj.select = False
     bpy.ops.object.delete()
 
-
-# ## bevel modifikator
-# def bevel(ob):
-#     bpy.context.scene.objects.active = ob
-#     bpy.ops.object.modifier_add(type='BEVEL')
-#     c_name = bpy.context.object.modifiers[0].name
-#     bpy.context.object.modifiers["{name}".format(name=c_name)].width = 0.3
-#     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Bevel')
-
 def solidify():
     bpy.ops.object.modifier_add(type='SOLIDIFY')
     c_name = bpy.context.object.modifiers[0].name
@@ -500,7 +414,7 @@ def differ(obj,pos,dime,count,i):
     dif = bpy.context.active_object
     dif.name = "differ"
 
-    ## ta 0.005 by bolo fajn ratat nejaky scale parametrom
+    ## ta 0.005 by bolo fajn ratat nejaky scale parametrom,  12.5 zvacime objekt o base dimenensiu [dom[i] +2 ]
     dif.dimensions = (dime[0]-((dime[0]/count)*(2*i)-0.05),dime[1]-((dime[1]/count)*(2*i)-0.05),dime[2]-((dime[2]/count)*(2*i)-0.05))
     bpy.context.scene.update()
     temp_dimensions[0] = bpy.data.objects['differ'].dimensions[0] - 0.05
@@ -535,8 +449,7 @@ def copy_selected_object():
 
 #property objektu
 def properties(Meshobject):
-    array = [Meshobject.location,Meshobject.dimensions,Meshobject.rotation_euler[:],Meshobject.pieces]
-    return array
+    return [Meshobject.location,Meshobject.dimensions,Meshobject.rotation_euler[:],Meshobject.pieces]
 
 #prienik a rozdelenie objektu
 def intersection_separate(default_object,rotation):
@@ -566,16 +479,17 @@ def delete_mesh():
 
 
 ### roztrasenie bodov
-def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,tempZ = False):
+def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,tempZ, axis):
     ob = bpy.data.objects['temp_grid']
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
     if tempZ:
-        temp_z = main_object_dimension[2]/2 - main_object_dimension[2]/9
+        temp_z = main_object_dimension[2]/2 - main_object_dimension[2]/(axis[2] +1)
     else:
         temp_z = 0
     for v in mesh.verts:
-            v.co = (random_co(v.co[0],main_object_dimension[0]/3,discrepancyX),random_co(v.co[1],main_object_dimension[1]/3,discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/9,discrepancyZ))
-            temp_z -= main_object_dimension[2]/9
+            v.co = (random_co(v.co[0],main_object_dimension[0]/(axis[0]+1),discrepancyX),random_co(v.co[1],main_object_dimension[1]/(axis[1] + 1),discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/(axis[2] +1),discrepancyZ))
+            if tempZ:
+                temp_z -= main_object_dimension[2]/(axis[2] +1)
     final_co_array = [ob.matrix_world * vert.co for vert in mesh.verts]
     # trigger viewport update
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
@@ -591,29 +505,34 @@ def random_angle(angle,dicrepancy):
     return math.pi/180 * ( angle + random.uniform(-dicrepancy,dicrepancy))
 
 
-def make_planes(array_co,dimension,obj,horizont, vertical,vertical_rot):
-    # rotate1 = math.pi/180*random.randint(1,360)
-    # rotate2 = math.pi/180*random.randint(1,360)
+def make_planes(array_co,dimension,obj,horizont, vertical,vertical_rot,axis):
     for v in array_co:
-        for i in range(3):
-            bpy.ops.mesh.primitive_plane_add(location=(v[0],v[1],v[2]))
-            plane = bpy.context.active_object
-            plane.name = "FractureOnePartMesh"
-            plane.dimensions = (dimension[0]*3,dimension[1]*3,0)
-            if i == 1:
-                bpy.ops.transform.rotate(value = random_angle(90,vertical), axis = (0,1,0))
-            elif i == 2:
-                bpy.ops.transform.rotate(value=random_angle(90, vertical_rot), axis=(1, 0, 0))
-            else:
-                bpy.ops.transform.rotate(value = random_angle(0,horizont), axis = (1,0,0))
-
+        if axis[0]:
+            define_plane(dimension,v)
+            bpy.ops.transform.rotate(value=random_angle(90, vertical), axis=(0, 1, 0))
             solidify()
             make_difference(obj)
+        if axis[1]:
+            define_plane(dimension, v)
+            bpy.ops.transform.rotate(value=random_angle(90, vertical_rot), axis=(1, 0, 0))
+            solidify()
+            make_difference(obj)
+        if axis[2]:
+            define_plane(dimension, v)
+            bpy.ops.transform.rotate(value=random_angle(0, horizont), axis=(1, 0, 0))
+            solidify()
+            make_difference(obj)
+
 
 
     # group()
     # make_difference(obj)
 
+def define_plane(dimension,v):
+    bpy.ops.mesh.primitive_plane_add(location=(v[0], v[1], v[2]))
+    plane = bpy.context.active_object
+    plane.name = "FractureOnePartMesh"
+    plane.dimensions = (dimension[0] * 3, dimension[1] * 3, 0)
 
 # ##oznacenie vsetkych novo vytvorench objektov
 def group(name = "FractureOnePartMesh", scale = 1.01):
@@ -676,8 +595,12 @@ def explode(ob,pos,dime,pieces,typ):
     group()
 
 
+def delete_default_object(default_object):
+    bpy.ops.object.select_all(action='DESELECT')
+    default_object.select = True
+    bpy.ops.object.delete()
 
-def get_basic_info():
+def get_basic_info(all = False):
     default_object, copy_object = copy_selected_object()
     default_object.name = "FractureMash_Default"
     copy_object.name = "FractureMash_duplicate"
@@ -685,11 +608,15 @@ def get_basic_info():
     dimensions = properties(default_object)[1]
     # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
     rotation = properties(default_object)[2]
-    pieces = properties(default_object)[3]
+    if all:
+        pieces = properties(default_object)[3]
+    else:
+        pieces = None
     copy_object.rotation_euler = (0, 0, 0)
     copy_object.dimensions = dimensions
 
     return [default_object,copy_object,position,dimensions,rotation,pieces]
+
 
 
 def register():
@@ -708,3 +635,72 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
+
+
+############################################# PANEL
+ # bpy.types.Object.planeH = IntProperty(
+    #        name="planeH",
+    #        default=45,
+    #        min=0,
+    #        max = 90)
+    # bpy.types.Object.planeV = IntProperty(
+    #        name="planeV",
+    #        default=45,
+    #        min=0,
+    #        max = 90)
+    # bpy.types.Object.planeVR = IntProperty(
+    #        name="planeVR",
+    #        default=45,
+    #        min=0,
+    #        max = 90)
+    # bpy.types.Object.discrepancy_X = FloatProperty(
+    #        name="discrepancy_X",
+    #        default=0.50,
+    #        min=0.00,
+    #        max = 1.00)
+    # bpy.types.Object.discrepancy_Y = FloatProperty(
+    #        name="discrepancy_Y",
+    #        default=0.50,
+    #        min=0.00,
+    #        max = 1.00)
+    # bpy.types.Object.discrepancy_Z = FloatProperty(
+    #        name="discrepancy_Z",
+    #        default=0.50,
+    #        min=0.00,
+    #        max = 1.00)
+    ################################execute
+# default_object,copy_object =  copy_selected_object()
+# #nastevenie mien Meshov
+# default_object.name = "FractureMash_Default"
+# copy_object.name = "FractureMash_duplicate"
+# #nastavenie vlastnosti
+# position = properties(default_object)[0]
+# dimensions = properties(default_object)[1]
+# # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
+# rotation = properties(default_object)[2]
+# pieces = properties(default_object)[3]
+# copy_object.rotation_euler = (0,0,0)
+# # default_object.rotation_euler = (0,0,0)
+# # default_object.draw_bounds_type = "CAPSULE"
+# copy_object.dimensions = dimensions
+################################ type random
+ # if default_object.type_p == "4":
+        #         # create_temp_grid_random(position,dimensions,pieces)
+        #         # delete_mesh()
+        #         ob = make_points(position,1,1,1)
+        #         array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z)
+        #         make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR)
+        #         # bpy.data.objects['FractureMash_duplicate'].dimensions = dimensions_original
+        #         if not default_object.delete:
+        #             bpy.ops.object.select_all(action='DESELECT')
+        #             default_object.select = True
+        #             bpy.ops.object.delete()
+        #
+        #         copy_object.rotation_euler = rotation
+        #         bpy.ops.object.select_all(action='DESELECT')
+        #         bpy.data.objects['temp_grid'].select = True
+        #         bpy.ops.object.delete()
+        #         separate_loose(copy_object)
+        #         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
+        #         return {"FINISHED"}
