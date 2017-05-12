@@ -88,6 +88,7 @@ class Make_basic_Fracture(Operator):
            explode(copy_object,position,dimensions,pieces,default_object.type_p)
            if not default_object.delete:
                delete_default_object(default_object)
+           copy_object.dimensions = (dimensions[0] - 2, dimensions[1] - 2, dimensions[2] - 2)
            intersection_separate(copy_object, rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
            return {"FINISHED"}
@@ -106,6 +107,7 @@ class Make_basic_Fracture(Operator):
 
         if not default_object.delete:
             delete_default_object(default_object)
+        copy_object.dimensions = (dimensions[0]-2,dimensions[1]-2,dimensions[2]-2)
         intersection_separate(copy_object, rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
         return {"FINISHED"}
@@ -240,6 +242,7 @@ class Make_random_Fracture(Operator):
             bpy.ops.object.select_all(action='DESELECT')
             bpy.data.objects['temp_grid'].select = True
             bpy.ops.object.delete()
+            copy_object.dimensions = (dimensions[0] - 2, dimensions[1] - 2, dimensions[2] - 2)
             separate_loose(copy_object)
             bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
             return {"FINISHED"}
@@ -606,6 +609,7 @@ def get_basic_info(all = False):
     copy_object.name = "FractureMash_duplicate"
     position = properties(default_object)[0]
     dimensions = properties(default_object)[1]
+    dimensions = (dimensions[0]+2,dimensions[1]+2,dimensions[2]+2)
     # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
     rotation = properties(default_object)[2]
     if all:
