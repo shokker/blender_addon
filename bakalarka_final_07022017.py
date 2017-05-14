@@ -1,3 +1,15 @@
+
+import bpy
+import bmesh
+import math
+import random
+from bpy.types import Operator,Panel
+from bpy.props import IntProperty, BoolProperty,EnumProperty,FloatProperty
+
+
+###################### META DATA #####################
+
+
 bl_info = {
     "name": "Fracture",
     "author": "Lukáš Danko",
@@ -9,14 +21,6 @@ bl_info = {
     "wiki_url": "",
     "tracker_url":"",
     "category":"Object"}
-
-## informacie o addone
-import bpy
-import bmesh
-import math
-import random
-from bpy.types import Operator,Panel
-from bpy.props import IntProperty, BoolProperty,EnumProperty,FloatProperty
 
 
 class FracturePanel():
@@ -69,12 +73,15 @@ class Create_basic_fracture(FracturePanel,Panel):
         row1.prop(ob,"pieces")
         row2 = layout.row()
         row2.prop(ob,"inner")
+
         row = layout.row()
         row.prop(ob,"type_p")
+
         row = layout.row(align=True)
         row.alignment = 'EXPAND'
         row.prop(ob,"bomb")
         row.prop(ob,"delete")
+
         row = layout.row()
         row.operator(Make_basic_Fracture.bl_idname)
         if not ob.bomb:
@@ -109,8 +116,6 @@ class Make_basic_Fracture(Operator):
            if not default_object.delete:
                delete_default_object(default_object)
 
-
-
            intersection_separate(copy_object ,dimensions,rotation)
            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
            return {"FINISHED"}
@@ -130,6 +135,10 @@ class Make_basic_Fracture(Operator):
 
         if not default_object.delete:
             delete_default_object(default_object)
+
+
+        ######################### SEPARATE #############################
+
 
         intersection_separate(copy_object,dimensions ,rotation)
         bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY')
@@ -236,11 +245,17 @@ class Create_random_fracture(FracturePanel,Panel):
         row = layout.row()
         row.operator(Make_random_Fracture.bl_idname)
 
+
 class Make_random_Fracture(Operator):
         bl_label = "Create"
         bl_idname = "make.random_fract"
 
         def execute(self, context):
+
+
+            ##################### BASIC INFO #######################
+
+
             all_properties = get_basic_info()
             default_object = all_properties[0]
             copy_object = all_properties[1]
@@ -248,6 +263,11 @@ class Make_random_Fracture(Operator):
             dimensions = all_properties[3]
             rotation = all_properties[4]
             axis = [default_object.x,default_object.y,default_object.z]
+
+
+            ####################### GRID TYPE ###########################
+
+
             if default_object.grid_type == '0':
                  create_temp_grid_random(position,dimensions)
                  delete_mesh()
@@ -256,9 +276,16 @@ class Make_random_Fracture(Operator):
                 make_points(position, dimensions, default_object.one,default_object.two,default_object.three)
                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, False, axis)
 
+
+            ####################### SLIDES #######################
+
+
             make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR,axis)
             if not default_object.delete:
                 delete_default_object(default_object)
+
+            ################################# SEPARATE #####################
+
 
             copy_object.rotation_euler = rotation
             bpy.ops.object.select_all(action='DESELECT')
@@ -328,9 +355,7 @@ def explode(pos,dime,n,typ):
     ob = bpy.context.active_object
     for i in range(n):
         if i!=n-1:
-            ## param: povodnu objekt , pozicia ,dimenzia , pocet casti , i+1 , nieco brutalne , typ
             pos_dim = differ(ob,pos,dime,count,i+1)
-
             pieces = (count-inr)*(2**k)
             minimal = min(pos_dim[1][0],pos_dim[1][1],pos_dim[1][2])
             if(pos_dim[1][0] < math.ceil(pieces*(pos_dim[1][0]/minimal)) * (minimal/pieces)
@@ -481,8 +506,8 @@ def make_points(location, dimension,  u, v, w):
         me.name = 'temp_grid'
         me.from_pydata(points, [], [])
         me.update()
-        # bpy.ops.transform.resize(value=(2, 2, 2))
         bpy.ops.object.editmode_toggle()
+
 
 def my_range(start, stop, step):
             r = start
@@ -498,16 +523,18 @@ def my_range(start, stop, step):
 def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,tempZ, axis):
     ob = bpy.data.objects['temp_grid']
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
+
     if tempZ:
         temp_z = main_object_dimension[2]/2 - main_object_dimension[2]/(axis[2] +1)
     else:
         temp_z = 0
+
     for v in mesh.verts:
             v.co = (random_co(v.co[0],main_object_dimension[0]/(axis[0]+1),discrepancyX),random_co(v.co[1],main_object_dimension[1]/(axis[1] + 1),discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/(axis[2] +1),discrepancyZ))
             if tempZ:
                 temp_z -= main_object_dimension[2]/(axis[2] +1)
+
     final_co_array = [ob.matrix_world * vert.co for vert in mesh.verts]
-    # trigger viewport update
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
     bpy.ops.object.mode_set(mode='OBJECT')
     return final_co_array
@@ -573,6 +600,8 @@ def make_intersection(obj,rot):
     c_name = bpy.context.object.modifiers[0].name
     bpy.context.object.modifiers["{name}".format(name=c_name)].operation = 'INTERSECT'
     bpy.context.object.modifiers["{name}".format(name=c_name)].object = bpy.data.objects["{next_n}".format(next_n = bpy.data.objects["FractureOnePartMesh"].name)]
+    if (2, 78, 0) < bpy.app.version:
+        bpy.context.object.modifiers["{name}".format(name=c_name)].solver = 'CARVE'
     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Boolean')
     obj.rotation_euler = rot
     bpy.data.objects['FractureOnePartMesh'].select = True
@@ -587,6 +616,8 @@ def make_difference(obj,name = "FractureOnePartMesh"):
     c_name = bpy.context.object.modifiers[0].name
     bpy.context.object.modifiers["{name}".format(name=c_name)].operation = 'DIFFERENCE'
     bpy.context.object.modifiers["{name}".format(name=c_name)].object = bpy.data.objects["{next_n}".format(next_n = bpy.data.objects[name].name)]
+    if (2, 78, 0) < bpy.app.version:
+        bpy.context.object.modifiers["{name}".format(name=c_name)].solver = 'CARVE'
     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Boolean')
     bpy.data.objects[name].select = True
     obj.select = False
@@ -603,7 +634,6 @@ def solidify():
 ################################## ROZDELENIE OBJEKTOV ###############################
 
 
-
 ## rozdelenie na male casti
 def separate_loose(ob):
     bpy.data.objects[ob.name].select = True
@@ -613,7 +643,6 @@ def separate_loose(ob):
 #vytvara diery do objektu
 def differ(obj,pos,dime,count,i):
     temp_dimensions = [None,None,None]
-    #vytvorim a pomenujem kocku
     bpy.ops.mesh.primitive_cube_add(location=(pos[0],pos[1],pos[2]))
     dif = bpy.context.active_object
     dif.name = "differ"
@@ -643,6 +672,7 @@ def delete_default_object(default_object):
 
 
 ###################### BLENDER MODUL FUNKCIE ###############################
+
 
 def register():
     bpy.utils.register_class(Create_basic_fracture)
