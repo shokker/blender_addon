@@ -14,7 +14,7 @@ bl_info = {
     "name": "Fracture",
     "author": "Lukáš Danko",
     "version": (1,0),
-    "blender":(2,76,0),
+    "blender":(2,77,0),
     "location": "VIEW_3D > Tools > Fracture",
     "description":"fracture into cube,self,sphere,block,random,explosive ready",
     "warning":"",
@@ -42,7 +42,7 @@ class Create_basic_fracture(FracturePanel,Panel):
 
 
     bpy.types.Object.pieces = IntProperty(
-           name="basic",
+           name="pieces",
            description = 'Number of pieces on smallest side of object',
            default=5,
            min=2,
@@ -59,9 +59,11 @@ class Create_basic_fracture(FracturePanel,Panel):
                                                  ('1', 'Block', 'Blocks'),
                                                  ('2', 'Sphere', 'Spheres'),
                                                  ('3', 'Self', 'Copies')),
-                                                 name = "choose fracture type")
+                                                 name = "choose fracture type",
+                                                description = 'choose type of object for fracture' )
     bpy.types.Object.bomb = BoolProperty(name = "Explosive Ready", description ='Create fracture with smaller fract in the middle of object' )
     bpy.types.Object.delete = BoolProperty(name = "Keep original mesh", description ='Choose if you want keep original object')
+
 
 
     ## GUI rozlozenie
@@ -149,59 +151,68 @@ class Create_random_fracture(FracturePanel,Panel):
     bl_idname = "object.random_fracture"
     bl_label = "Create random Fracture"
 
-    bpy.types.Object.delete = BoolProperty(name="Keep original mesh")
-    bpy.types.Object.test = BoolProperty(name="Test")
+    bpy.types.Object.delete1 = BoolProperty(name="Keep original mesh",
+                                            description='Choose if you want keep original object')
     bpy.types.Object.planeH = IntProperty(
            name="X",
            default=20,
            min=0,
-           max = 45)
+           max = 45,
+            description = 'rotate plane around axis X')
     bpy.types.Object.planeV = IntProperty(
            name="Y",
            default=20,
            min=0,
-           max = 45)
+           max = 45,
+        description='rotate plane around axis Y')
     bpy.types.Object.planeVR = IntProperty(
            name="Z",
            default=20,
            min=0,
-           max = 45)
+           max = 45,
+        description='rotate plane around axis Z')
     bpy.types.Object.discrepancy_X = FloatProperty(
            name="X",
            default=0.50,
            min=0.00,
-           max = 1.00)
+           max = 1.00,
+        description='jitter point in line X')
     bpy.types.Object.discrepancy_Y = FloatProperty(
            name="Y",
            default=0.50,
            min=0.00,
-           max = 1.00)
+           max = 1.00,
+        description='jitter point in line Y')
     bpy.types.Object.discrepancy_Z = FloatProperty(
            name="Z",
            default=0.50,
            min=0.00,
-           max = 1.00)
+           max = 1.00,
+        description='jitter point in line Z')
     bpy.types.Object.one = IntProperty(
         name="X",
         default=1,
         min=1,
-        max=2)
+        max=2,
+        description='create point on line X')
     bpy.types.Object.two = IntProperty(
         name="Y",
         default=1,
         min=1,
-        max=2)
+        max=2,
+        description='create point on line Y')
     bpy.types.Object.three = IntProperty(
         name="Z",
         default=1,
         min=1,
-        max=2)
+        max=2,
+        description='create point on line Z')
     bpy.types.Object.grid_type = EnumProperty(items=(('0', 'grid', '9x9'),
                                                   ('1', 'custom', 'custom grid')),
-                                           name="choose grid system")
-    bpy.types.Object.x = bpy.props.BoolProperty(name ="X")
-    bpy.types.Object.y = bpy.props.BoolProperty(name ="Y")
-    bpy.types.Object.z = bpy.props.BoolProperty(name ="Z")
+                                           name="choose grid system",description='Choose system for generate points')
+    bpy.types.Object.x = bpy.props.BoolProperty(name ="X", description='Create planes in line X')
+    bpy.types.Object.y = bpy.props.BoolProperty(name ="Y",description='Create planes in line Y')
+    bpy.types.Object.z = bpy.props.BoolProperty(name ="Z", description='Create planes in line Z')
 
 
     ## GUI rozlozenie
@@ -239,7 +250,7 @@ class Create_random_fracture(FracturePanel,Panel):
         row.prop(ob, "z")
 
         row = layout.row()
-        row.prop(ob, "delete")
+        row.prop(ob, "delete1")
         if ob.grid_type == '0':
             rowPoints.enabled = False
         row = layout.row()
@@ -272,9 +283,11 @@ class Make_random_Fracture(Operator):
                  create_temp_grid_random(position,dimensions)
                  delete_mesh()
                  array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, True, [3,3,8])
+
             else:
                 make_points(position, dimensions, default_object.one,default_object.two,default_object.three)
                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, False, axis)
+
 
 
             ####################### SLIDES #######################
@@ -350,7 +363,6 @@ def explode(pos,dime,n,typ):
     n += 1
     inr=2
     k=1
-    ## tu sa mi vyvoria "kocky"
     types(typ,pos,dime,count,"FractureOnePartMesh_0")
     ob = bpy.context.active_object
     for i in range(n):
@@ -384,7 +396,6 @@ def get_basic_info(all = False):
     dimensions = get_PDR(default_object)[1]
     dimensions = (dimensions[0]+2,dimensions[1]+2,dimensions[2]+2)
     copy_object.dimensions = dimensions
-    # dimensions = (dimensions_original[0]*2,dimensions_original[1]*2,dimensions_original[2]*2)
     rotation = get_PDR(default_object)[2]
     if all:
         pieces = get_PDR(default_object)[3]
@@ -522,6 +533,7 @@ def my_range(start, stop, step):
 ### roztrasenie bodov
 def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,tempZ, axis):
     ob = bpy.data.objects['temp_grid']
+    ob1 = bpy.data.objects['FractureMash_duplicate']
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
 
     if tempZ:
@@ -531,6 +543,12 @@ def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,
 
     for v in mesh.verts:
             v.co = (random_co(v.co[0],main_object_dimension[0]/(axis[0]+1),discrepancyX),random_co(v.co[1],main_object_dimension[1]/(axis[1] + 1),discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/(axis[2] +1),discrepancyZ))
+
+            ######## EXPERIMENT IS INSIDE ###############
+            # if not is_inside(v.co,1.84467e+19,ob1):
+            #     v.select = True
+            #     bpy.ops.mesh.delete(type='VERT')
+
             if tempZ:
                 temp_z -= main_object_dimension[2]/(axis[2] +1)
 
@@ -548,6 +566,16 @@ def random_angle(angle,dicrepancy):
     return math.pi/180 * ( angle + random.uniform(-dicrepancy,dicrepancy))
 
 
+###### TEST IF vervetx in mesh ###################################################
+
+
+def is_inside(p, max_dist, obj):
+    # max_dist = 1.84467e+19
+    point, normal, face = obj.closest_point_on_mesh(p, max_dist)
+    p2 = point-p
+    v = p2.dot(normal)
+    print(v)
+    return not(v < 0.0)
 ####################### TVORBA ROVIN ############################
 
 
@@ -600,7 +628,7 @@ def make_intersection(obj,rot):
     c_name = bpy.context.object.modifiers[0].name
     bpy.context.object.modifiers["{name}".format(name=c_name)].operation = 'INTERSECT'
     bpy.context.object.modifiers["{name}".format(name=c_name)].object = bpy.data.objects["{next_n}".format(next_n = bpy.data.objects["FractureOnePartMesh"].name)]
-    if (2, 78, 0) < bpy.app.version:
+    if (2, 78, 0) <= bpy.app.version:
         bpy.context.object.modifiers["{name}".format(name=c_name)].solver = 'CARVE'
     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Boolean')
     obj.rotation_euler = rot
@@ -616,7 +644,7 @@ def make_difference(obj,name = "FractureOnePartMesh"):
     c_name = bpy.context.object.modifiers[0].name
     bpy.context.object.modifiers["{name}".format(name=c_name)].operation = 'DIFFERENCE'
     bpy.context.object.modifiers["{name}".format(name=c_name)].object = bpy.data.objects["{next_n}".format(next_n = bpy.data.objects[name].name)]
-    if (2, 78, 0) < bpy.app.version:
+    if (2, 78, 0) <= bpy.app.version:
         bpy.context.object.modifiers["{name}".format(name=c_name)].solver = 'CARVE'
     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Boolean')
     bpy.data.objects[name].select = True
