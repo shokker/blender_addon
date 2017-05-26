@@ -282,7 +282,7 @@ class Make_random_Fracture(Operator):
             if default_object.grid_type == '0':
                  create_temp_grid_random(position,dimensions)
                  delete_mesh()
-                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, True, [3,3,8])
+                 array_co = discrepancy(dimensions, default_object.discrepancy_X, default_object.discrepancy_Y, default_object.discrepancy_Z, True, [3,3,9])
 
             else:
                 make_points(position, dimensions, default_object.one,default_object.two,default_object.three)
@@ -293,7 +293,8 @@ class Make_random_Fracture(Operator):
             ####################### SLIDES #######################
 
 
-            make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR,axis)
+            jitter = [default_object.discrepancy_X,default_object.discrepancy_Y,default_object.discrepancy_Z]
+            make_planes(array_co,dimensions,copy_object,default_object.planeH,default_object.planeV,default_object.planeVR,axis,jitter)
             if not default_object.delete:
                 delete_default_object(default_object)
 
@@ -537,11 +538,13 @@ def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,
     mesh=bmesh.from_edit_mesh(bpy.context.object.data)
 
     if tempZ:
-        temp_z = main_object_dimension[2]/2 - main_object_dimension[2]/(axis[2] +1)
+        temp_z = (main_object_dimension[2]/2 - main_object_dimension[2] / (axis[2] + 1))*2
+
     else:
         temp_z = 0
-
     for v in mesh.verts:
+
+
             v.co = (random_co(v.co[0],main_object_dimension[0]/(axis[0]+1),discrepancyX),random_co(v.co[1],main_object_dimension[1]/(axis[1] + 1),discrepancyY),random_co(v.co[2] + temp_z,main_object_dimension[2]/(axis[2] +1),discrepancyZ))
 
             ######## EXPERIMENT IS INSIDE ###############
@@ -550,11 +553,13 @@ def discrepancy(main_object_dimension, discrepancyX, discrepancyY, discrepancyZ,
             #     bpy.ops.mesh.delete(type='VERT')
 
             if tempZ:
-                temp_z -= main_object_dimension[2]/(axis[2] +1)
+                temp_z -= (main_object_dimension[2]/(axis[2] +1))*2
+
 
     final_co_array = [ob.matrix_world * vert.co for vert in mesh.verts]
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
     bpy.ops.object.mode_set(mode='OBJECT')
+
     return final_co_array
 
 
@@ -568,34 +573,53 @@ def random_angle(angle,dicrepancy):
 
 ###### TEST IF vervetx in mesh ###################################################
 
-
-def is_inside(p, max_dist, obj):
-    # max_dist = 1.84467e+19
-    point, normal, face = obj.closest_point_on_mesh(p, max_dist)
-    p2 = point-p
-    v = p2.dot(normal)
-    print(v)
-    return not(v < 0.0)
+#
+# def is_inside(p, max_dist, obj):
+#     # max_dist = 1.84467e+19
+#     point, normal, face = obj.closest_point_on_mesh(p, max_dist)
+#     p2 = point-p
+#     v = p2.dot(normal)
+#     return not(v < 0.0)
 ####################### TVORBA ROVIN ############################
 
 
-def make_planes(array_co,dimension,obj,x, y,z,axis):
+def make_planes(array_co,dimension,obj,x, y,z,axis,jitter):
+
+    temp_array_x = []
+    temp_array_y = []
+    temp_array_z = []
     for v in array_co:
         if axis[0]:
-            define_plane(dimension, v)
-            bpy.ops.transform.rotate(value=random_angle(90, x), axis=(1, 0, 0))
-            solidify()
-            make_difference(obj)
+            if (jitter[0] == 0 ) and (v[1] in temp_array_x) and ( x == 0):
+                pass
+            else:
+                define_plane(dimension, v)
+                bpy.ops.transform.rotate(value=random_angle(90, x), axis=(1, 0, 0))
+                solidify()
+                make_difference(obj)
+                if v[1] not in temp_array_x:
+                    temp_array_x.append(v[1])
         if axis[1]:
-            define_plane(dimension,v)
-            bpy.ops.transform.rotate(value=random_angle(90, y), axis=(0, 1, 0))
-            solidify()
-            make_difference(obj)
+            if (jitter[1] == 0)  and (v[0] in temp_array_y )and (y==0):
+                pass
+            else:
+                define_plane(dimension,v)
+                bpy.ops.transform.rotate(value=random_angle(90, y), axis=(0, 1, 0))
+                solidify()
+                make_difference(obj)
+                if v[0] not in temp_array_y:
+                    temp_array_y.append(v[0])
         if axis[2]:
-            define_plane(dimension, v)
-            bpy.ops.transform.rotate(value=random_angle(0, z), axis=(1, 0, 0))
-            solidify()
-            make_difference(obj)
+            if jitter[2] == 0 and  v[2] in temp_array_z and z==0:
+                pass
+            else:
+                define_plane(dimension, v)
+                bpy.ops.transform.rotate(value=random_angle(0, z), axis=(1, 0, 0))
+                solidify()
+                make_difference(obj)
+                if v[2] not in temp_array_z:
+                    temp_array_z.append(v[2])
+
 
 
 def define_plane(dimension,v):
@@ -655,7 +679,7 @@ def make_difference(obj,name = "FractureOnePartMesh"):
 def solidify():
     bpy.ops.object.modifier_add(type='SOLIDIFY')
     c_name = bpy.context.object.modifiers[0].name
-    bpy.context.object.modifiers["{name}".format(name=c_name)].thickness = 0.003
+    bpy.context.object.modifiers["{name}".format(name=c_name)].thickness = 0.0001
     bpy.ops.object.modifier_apply(apply_as='DATA',modifier='Solidify')
 
 
