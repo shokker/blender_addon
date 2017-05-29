@@ -207,7 +207,7 @@ class Create_random_fracture(FracturePanel,Panel):
         min=1,
         max=2,
         description='create point on line Z')
-    bpy.types.Object.grid_type = EnumProperty(items=(('0', 'grid', '9x9'),
+    bpy.types.Object.grid_type = EnumProperty(items=(('0', '3x3', '3x3 points'),
                                                   ('1', 'custom', 'custom grid')),
                                            name="choose grid system",description='Choose system for generate points')
     bpy.types.Object.x = bpy.props.BoolProperty(name ="X", description='Create planes in line X')
